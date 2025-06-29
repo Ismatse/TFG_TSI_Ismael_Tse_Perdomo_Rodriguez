@@ -114,7 +114,7 @@ def main():
                 all_targets.extend(target.numpy())
 
         # Plot confusion matrix
-        class_names = ["Benign_traffic", "Benign_HH", "Malign_HH", "Unknown"]
+        class_names = ["Benign_traffic", "Benign_HH", "Malign_HH"]
         plot_confusion_matrix(
             np.array(all_targets),
             np.array(all_preds),

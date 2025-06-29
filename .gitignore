@@ -1,2 +1,11 @@
 datasets/train.csv
 datasets/test.csv
+# Jupyter notebook checkpoints
+**/.ipynb_checkpoints/
+
+# Python byte-code caches
+**/__pycache__/
+
+# Training / experiment artefacts
+**/checkpoints/
+**/logs/
