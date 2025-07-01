@@ -3,19 +3,20 @@ import time
 
 import numpy as np
 import torch
-
+import numpy as np
+import os
+import time
+from datetime import datetime
 from options import Options
 from plain_transformer import (
-    PlainTransformer,
-    Trainer,
-    create_data_loaders,
-    create_dirs,
-    get_available_memory,
-    plot_confusion_matrix,
-    plot_history,
-    print_model_summary,
-    save_metrics,
-    set_seeds,
+    PlainTransformer, create_data_loaders as plain_create_data_loaders, 
+    Trainer as PlainTrainer,
+    create_dirs, set_seeds, plot_history, plot_confusion_matrix,
+    save_metrics, print_model_summary, get_available_memory, save_run_info
+)
+from informer import (
+    Informer, create_data_loaders as informer_create_data_loaders,
+    Trainer as InformerTrainer
 )
 
 
@@ -36,9 +37,14 @@ def main():
     if "cuda" in opt.device:
         print(f"Available GPU memory: {memory_info['available_memory_mb']:.2f} MB")
 
-    # Create data loaders
+    # Create data loaders based on model type
     print("\nCreating data loaders...")
-    train_loader, val_loader, test_loader, train_dataset = create_data_loaders(opt)
+    if opt.model == "plain_transformer":
+        train_loader, val_loader, test_loader, train_dataset = plain_create_data_loaders(opt)
+    elif opt.model == "informer":
+        train_loader, val_loader, test_loader, train_dataset = informer_create_data_loaders(opt)
+    else:
+        raise ValueError(f"Unknown model type: {opt.model}")
 
     # Calculate input dimension based on dataset
     input_dim = train_dataset.sequences.shape[2]
@@ -48,14 +54,33 @@ def main():
     print(f"\nCreating {opt.model} model...")
     if opt.model == "plain_transformer":
         model = PlainTransformer(opt, input_dim)
+    elif opt.model == "informer":
+        model = Informer(opt, input_dim)
     else:
         raise ValueError(f"Unknown model type: {opt.model}")
 
     # Print model summary
     print_model_summary(model, input_size=(opt.batch_size, opt.seq_length, input_dim))
 
-    # Create trainer
-    trainer = Trainer(model, opt, train_loader, val_loader, test_loader)
+    # Create trainer based on model type
+    if opt.model == "plain_transformer":
+        trainer = PlainTrainer(model, opt, train_loader, val_loader, test_loader)
+    elif opt.model == "informer":
+        trainer = InformerTrainer(model, opt, train_loader, val_loader, test_loader)
+    else:
+        raise ValueError(f"Unknown model type: {opt.model}")
+    
+    # Resume from checkpoint if specified
+    if opt.resume_from:
+        if os.path.exists(opt.resume_from):
+            print(f"Resuming training from checkpoint: {opt.resume_from}")
+            trainer.load_checkpoint(opt.resume_from, resume_training=True)
+        else:
+            print(f"Warning: Checkpoint file {opt.resume_from} not found. Starting from scratch.")
+
+    # Save run information
+    run_start_time = datetime.now()
+    save_run_info(opt.log_dir, opt, start_time=run_start_time)
 
     # Start training
     start_time = time.time()

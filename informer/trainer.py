@@ -10,22 +10,8 @@ from tqdm import tqdm
 from .poly_lr import PolyLRScheduler
 
 
-class Trainer:
-    """
-    Trainer class to handle model training and evaluation.
-    """
-
+class InformerTrainer:
     def __init__(self, model, opt, train_loader, val_loader, test_loader=None):
-        """
-        Initialize the trainer.
-
-        Args:
-            model: The model to train
-            opt: Options object with configuration parameters
-            train_loader: DataLoader for training data
-            val_loader: DataLoader for validation data
-            test_loader: DataLoader for test data (optional)
-        """
         self.model = model
         self.opt = opt
         self.train_loader = train_loader
@@ -64,7 +50,6 @@ class Trainer:
         self.current_epoch = 0
 
     def train_epoch(self):
-        """Train the model for one epoch."""
         self.model.train()
         total_loss = 0
         correct = 0
@@ -96,19 +81,6 @@ class Trainer:
         return total_loss / len(self.train_loader), correct / total
 
     def evaluate(self, data_loader, phase="val"):
-        """
-        Evaluate the model on the given data loader.
-
-        Args:
-            data_loader: DataLoader for evaluation
-            phase: 'val' or 'test'
-
-        Returns:
-            loss: Average loss
-            accuracy: Overall accuracy
-            report: Classification report
-            conf_matrix: Confusion matrix
-        """
         self.model.eval()
         total_loss = 0
         correct = 0
@@ -148,7 +120,6 @@ class Trainer:
         return total_loss / len(data_loader), accuracy, report, conf_matrix
 
     def train(self):
-        """Training loop for the specified number of epochs."""
         start_epoch = self.current_epoch
         print(
             f"\nStarting training from epoch {start_epoch + 1} to {self.opt.epochs}..."
@@ -247,18 +218,6 @@ class Trainer:
         }
 
     def test(self, checkpoint_path=None):
-        """
-        Evaluate the model on the test set.
-
-        Args:
-            checkpoint_path: Path to the checkpoint to load (if not provided, uses the current model state)
-
-        Returns:
-            test_loss: Average test loss
-            test_accuracy: Overall test accuracy
-            test_report: Classification report on test data
-            test_conf_matrix: Confusion matrix on test data
-        """
         if self.test_loader is None:
             print("No test data loader provided.")
             return None, None, None, None
@@ -286,12 +245,6 @@ class Trainer:
         return test_loss, test_accuracy, test_report, test_conf_matrix
 
     def save_checkpoint(self, filename):
-        """
-        Save model checkpoint.
-
-        Args:
-            filename: Name of the checkpoint file
-        """
         checkpoint_path = os.path.join(self.opt.checkpoint_dir, filename)
         torch.save(
             {
@@ -311,13 +264,6 @@ class Trainer:
         )
 
     def load_checkpoint(self, checkpoint_path, resume_training=False):
-        """
-        Load model checkpoint.
-
-        Args:
-            checkpoint_path: Path to the checkpoint file
-            resume_training: Whether to resume training state (optimizer, scheduler, etc.)
-        """
         checkpoint = torch.load(checkpoint_path, map_location=self.opt.device)
 
         self.model.load_state_dict(checkpoint["model_state_dict"])
@@ -339,7 +285,7 @@ class Trainer:
             if "current_epoch" in checkpoint:
                 self.current_epoch = (
                     checkpoint["current_epoch"] + 1
-                )  # Start from next epoch
+                )
 
             if "early_stopping_counter" in checkpoint:
                 self.early_stopping_counter = checkpoint["early_stopping_counter"]

@@ -15,7 +15,7 @@ class Options:
             "--model",
             type=str,
             default="plain_transformer",
-            choices=["plain_transformer"],
+            choices=["plain_transformer", "informer"],
             help="Model architecture to use",
         )
 
@@ -88,13 +88,28 @@ class Options:
         self.parser.add_argument(
             "--use_torch_transformer",
             action="store_true",
+            default=True,
             help="Use PyTorch built-in transformer implementation",
         )
         self.parser.add_argument(
             "--num_classes",
             type=int,
             default=3,
-            help="Use PyTorch built-in transformer implementation",
+            help="Number of classes for classification",
+        )
+
+        # Informer-specific parameters
+        self.parser.add_argument(
+            "--factor",
+            type=int,
+            default=5,
+            help="ProbSparse attn factor (Informer only)",
+        )
+        self.parser.add_argument(
+            "--distil",
+            action="store_true",
+            default=True,
+            help="Whether to use distilling in encoder (Informer only)",
         )
 
         # Training parameters
@@ -115,6 +130,18 @@ class Options:
             type=int,
             default=5,
             help="Save checkpoint every N epochs",
+        )
+        self.parser.add_argument(
+            "--early_stopping_patience",
+            type=int,
+            default=5,
+            help="Number of epochs to wait for improvement before early stopping",
+        )
+        self.parser.add_argument(
+            "--resume_from",
+            type=str,
+            default="",
+            help="Path to checkpoint to resume training from",
         )
 
         # Paths
@@ -165,6 +192,33 @@ class Options:
             import torch
 
             opt.device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        # Create timestamped run directory if not resuming from checkpoint
+        if not opt.resume_from:
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            run_name = f"run_{timestamp}"
+            
+            # Update paths to include architecture and run directory
+            opt.checkpoint_dir = os.path.join(opt.checkpoint_dir, opt.model, run_name)
+            opt.log_dir = os.path.join(opt.log_dir, opt.model, run_name)
+            
+            print(f"Creating new run directory: {opt.model}/{run_name}")
+        else:
+            # When resuming, extract run directory from checkpoint path
+            if os.path.exists(opt.resume_from):
+                # Extract run directory from checkpoint path
+                checkpoint_dir = os.path.dirname(opt.resume_from)
+                run_name = os.path.basename(checkpoint_dir)
+                architecture = os.path.basename(os.path.dirname(checkpoint_dir))
+                
+                # Update paths to use the same run directory
+                opt.checkpoint_dir = checkpoint_dir
+                opt.log_dir = os.path.join("logs", architecture, run_name)
+                
+                print(f"Resuming run: {architecture}/{run_name}")
+            else:
+                print(f"Warning: Checkpoint file {opt.resume_from} not found!")
 
         # Create directories
         os.makedirs(opt.checkpoint_dir, exist_ok=True)

@@ -8,19 +8,6 @@ import json
 from datetime import datetime
 
 def create_run_directory(base_checkpoint_dir, base_log_dir, run_name=None):
-    """
-    Create a timestamped run directory for organizing experiments.
-    
-    Args:
-        base_checkpoint_dir: Base directory for checkpoints
-        base_log_dir: Base directory for logs
-        run_name: Optional custom run name. If None, creates timestamp-based name.
-        
-    Returns:
-        checkpoint_dir: Full path to checkpoint directory for this run
-        log_dir: Full path to log directory for this run
-        run_name: Name of the run
-    """
     if run_name is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         run_name = f"run_{timestamp}"
@@ -32,15 +19,6 @@ def create_run_directory(base_checkpoint_dir, base_log_dir, run_name=None):
 
 
 def list_available_runs(base_checkpoint_dir):
-    """
-    List all available runs in the checkpoint directory.
-    
-    Args:
-        base_checkpoint_dir: Base directory for checkpoints
-        
-    Returns:
-        runs: List of available run directories
-    """
     if not os.path.exists(base_checkpoint_dir):
         return []
     
@@ -54,15 +32,6 @@ def list_available_runs(base_checkpoint_dir):
 
 
 def find_latest_checkpoint(checkpoint_dir):
-    """
-    Find the latest checkpoint in a run directory.
-    
-    Args:
-        checkpoint_dir: Directory containing checkpoints
-        
-    Returns:
-        latest_checkpoint: Path to the latest checkpoint, or None if not found
-    """
     if not os.path.exists(checkpoint_dir):
         return None
     
@@ -73,21 +42,12 @@ def find_latest_checkpoint(checkpoint_dir):
             checkpoints.append((epoch_num, os.path.join(checkpoint_dir, file)))
     
     if checkpoints:
-        # Return the checkpoint with the highest epoch number
         return sorted(checkpoints, key=lambda x: x[0])[-1][1]
     
     return None
 
 
 def save_run_info(log_dir, opt, start_time=None):
-    """
-    Save information about the current run.
-    
-    Args:
-        log_dir: Directory to save run info
-        opt: Options object
-        start_time: Start time of the run
-    """
     run_info = {
         'timestamp': datetime.now().isoformat(),
         'start_time': start_time.isoformat() if start_time else None,
@@ -109,24 +69,12 @@ def save_run_info(log_dir, opt, start_time=None):
 
 
 def create_dirs(directories):
-    """
-    Create directories if they don't exist.
-    
-    Args:
-        directories: List of directory paths to create
-    """
     for directory in directories:
         os.makedirs(directory, exist_ok=True)
         print(f"Directory created/verified: {directory}")
 
 
 def set_seeds(seed=42):
-    """
-    Set random seeds for reproducibility.
-    
-    Args:
-        seed: Random seed value
-    """
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
@@ -138,17 +86,6 @@ def set_seeds(seed=42):
 
 
 def plot_history(train_losses, train_accuracies, val_losses, val_accuracies, log_dir, model_name):
-    """
-    Plot training and validation history.
-    
-    Args:
-        train_losses: List of training losses
-        train_accuracies: List of training accuracies
-        val_losses: List of validation losses
-        val_accuracies: List of validation accuracies
-        log_dir: Directory to save the plots
-        model_name: Name of the model for plot titles and filenames
-    """
     plt.figure(figsize=(12, 5))
     
     # Plot loss
@@ -175,21 +112,10 @@ def plot_history(train_losses, train_accuracies, val_losses, val_accuracies, log
     plot_path = os.path.join(log_dir, f'{model_name}_training_history.png')
     plt.savefig(plot_path)
     print(f"Training history plot saved to {plot_path}")
-    plt.close()  # Close the figure to free memory
+    plt.close()
     
 
 def plot_confusion_matrix(y_true, y_pred, class_names, log_dir, model_name, phase='test'):
-    """
-    Plot confusion matrix.
-    
-    Args:
-        y_true: True labels
-        y_pred: Predicted labels
-        class_names: List of class names
-        log_dir: Directory to save the plot
-        model_name: Name of the model for plot title and filename
-        phase: 'train', 'val', or 'test'
-    """
     cm = confusion_matrix(y_true, y_pred)
     
     plt.figure(figsize=(10, 8))
@@ -204,19 +130,10 @@ def plot_confusion_matrix(y_true, y_pred, class_names, log_dir, model_name, phas
     plot_path = os.path.join(log_dir, f'{model_name}_{phase}_confusion_matrix.png')
     plt.savefig(plot_path)
     print(f"Confusion matrix plot saved to {plot_path}")
-    plt.close()  # Close the figure to free memory
+    plt.close()
 
 
 def save_metrics(metrics, log_dir, model_name):
-    """
-    Save metrics to JSON file.
-    
-    Args:
-        metrics: Dictionary of metrics
-        log_dir: Directory to save the metrics
-        model_name: Name of the model for filename
-    """
-    # Convert numpy arrays to lists for JSON serialization
     for key, value in metrics.items():
         if isinstance(value, np.ndarray):
             metrics[key] = value.tolist()
@@ -228,27 +145,11 @@ def save_metrics(metrics, log_dir, model_name):
 
 
 def count_parameters(model):
-    """
-    Count the number of trainable parameters in a model.
-    
-    Args:
-        model: PyTorch model
-        
-    Returns:
-        total_params: Total number of parameters
-    """
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     return total_params
 
 
 def print_model_summary(model, input_size=None):
-    """
-    Print a summary of the model similar to Keras model.summary().
-    
-    Args:
-        model: PyTorch model
-        input_size: Input size as tuple (batch_size, seq_length, input_dim)
-    """
     print(f"Model Summary:")
     print("=" * 80)
     print(f"Total trainable parameters: {count_parameters(model):,}")
@@ -257,14 +158,11 @@ def print_model_summary(model, input_size=None):
     print("=" * 80)
     
     if input_size is not None:
-        # Calculate model's memory usage
         batch_size, seq_length, input_dim = input_size
-        # Estimate memory usage (very rough approximation)
         param_size = sum([p.nelement() * p.element_size() for p in model.parameters()])
         buffer_size = sum([b.nelement() * b.element_size() for b in model.buffers()])
         
-        # Assuming 4 bytes per parameter for gradients and optimizer state
-        estimated_total = param_size + buffer_size + (param_size * 2)  # parameters + buffers + gradients + optimizer
+        estimated_total = param_size + buffer_size + (param_size * 2)
         
         print(f"Estimated model size: {param_size / 1024 / 1024:.2f} MB")
         print(f"Estimated total memory usage: {estimated_total / 1024 / 1024:.2f} MB")
@@ -272,12 +170,6 @@ def print_model_summary(model, input_size=None):
 
 
 def get_available_memory():
-    """
-    Get available GPU memory if CUDA is available.
-    
-    Returns:
-        available_memory: Available memory in MB
-    """
     if torch.cuda.is_available():
         device = torch.cuda.current_device()
         total_memory = torch.cuda.get_device_properties(device).total_memory

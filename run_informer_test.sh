@@ -1,0 +1,29 @@
+#!/bin/bash
+
+echo "Testing Informer architecture with minimal settings..."
+
+python3 main.py \
+    --model informer \
+    --train_file datasets/train.csv \
+    --test_file datasets/test.csv \
+    --val_split 0.2 \
+    --batch_size 64 \
+    --seq_length 32 \
+    --stride 4 \
+    --num_workers 8 \
+    --embedding_dim 256 \
+    --num_heads 8 \
+    --num_encoder_layers 8 \
+    --dropout 0.01 \
+    --factor 3 \
+    --distil \
+    --num_classes 3 \
+    --epochs 100 \
+    --lr 0.0001 \
+    --weight_decay 1e-5 \
+    --checkpoint_interval 1 \
+    --checkpoint_dir ./checkpoints \
+    --log_dir ./logs \
+    --time_feature_engineering \
+    --categorical_encoding one-hot \
+    --early_stopping_patience 8
